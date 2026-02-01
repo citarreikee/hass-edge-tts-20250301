@@ -189,10 +189,19 @@ class EdgeTTSEntity(TextToSpeechEntity):
             audio_bytes = b"".join(audio_chunks)
             audio_bytes = _strip_id3v2(audio_bytes)
             if output_format == "wav":
-                audio_bytes = await tts_component.async_convert_audio(
-                    self.hass, "mp3", audio_bytes, "wav"
-                )
-                return "wav", audio_bytes
+                try:
+                    audio_bytes = await tts_component.async_convert_audio(
+                        self.hass, "mp3", audio_bytes, "wav"
+                    )
+                    return "wav", audio_bytes
+                except FileNotFoundError as err:
+                    _LOGGER.warning(
+                        "ffmpeg not found; falling back to mp3 output"
+                    )
+                except Exception as err:  # noqa: BLE001 - fallback to mp3
+                    _LOGGER.warning(
+                        "Failed to convert mp3->wav (%s); falling back to mp3", err
+                    )
             return "mp3", audio_bytes
         except Exception as err:  # noqa: BLE001 - surface the error to the user
             _LOGGER.warning("Edge TTS request failed: %s", err, exc_info=True)
