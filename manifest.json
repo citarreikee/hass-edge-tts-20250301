@@ -1,0 +1,9 @@
+{
+  "domain": "edge_tts",
+  "name": "Edge TTS",
+  "version": "0.1.0",
+  "documentation": "https://github.com/citarreikee/hass-edge-tts-20250301",
+  "requirements": ["edge-tts>=7.2.0,<8.0"],
+  "config_flow": true,
+  "iot_class": "cloud_polling"
+}

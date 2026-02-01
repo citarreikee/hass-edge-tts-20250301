@@ -1,0 +1,50 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add Edge TTS",
+        "description": "Configure the default voice and speech settings.",
+        "data": {
+          "voice": "Default voice",
+          "rate": "Rate",
+          "volume": "Volume",
+          "pitch": "Pitch"
+        },
+        "data_description": {
+          "voice": "Example: en-US-EmmaMultilingualNeural or zh-CN-XiaoxiaoNeural.",
+          "rate": "Percentage change, e.g. +0% or -10%.",
+          "volume": "Percentage change, e.g. +0% or -10%.",
+          "pitch": "Frequency change, e.g. +0Hz or -50Hz."
+        }
+      }
+    },
+    "error": {
+      "invalid_rate": "Rate must look like +0% or -10%.",
+      "invalid_volume": "Volume must look like +0% or -10%.",
+      "invalid_pitch": "Pitch must look like +0Hz or -50Hz."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "data": {
+          "voice": "Default voice",
+          "rate": "Rate",
+          "volume": "Volume",
+          "pitch": "Pitch"
+        },
+        "data_description": {
+          "voice": "Example: en-US-EmmaMultilingualNeural or zh-CN-XiaoxiaoNeural.",
+          "rate": "Percentage change, e.g. +0% or -10%.",
+          "volume": "Percentage change, e.g. +0% or -10%.",
+          "pitch": "Frequency change, e.g. +0Hz or -50Hz."
+        }
+      }
+    },
+    "error": {
+      "invalid_rate": "Rate must look like +0% or -10%.",
+      "invalid_volume": "Volume must look like +0% or -10%.",
+      "invalid_pitch": "Pitch must look like +0Hz or -50Hz."
+    }
+  }
+}
