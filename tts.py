@@ -157,7 +157,9 @@ class EdgeTTSEntity(TextToSpeechEntity):
             if not audio_chunks:
                 raise HomeAssistantError("No audio received from Edge TTS")
 
-            return "mp3", b"".join(audio_chunks)
+            audio_bytes = b"".join(audio_chunks)
+            audio_bytes = _strip_id3v2(audio_bytes)
+            return "mp3", audio_bytes
         except Exception as err:  # noqa: BLE001 - surface the error to the user
             _LOGGER.warning("Edge TTS request failed: %s", err, exc_info=True)
             raise HomeAssistantError("Edge TTS request failed") from err
@@ -181,3 +183,21 @@ class EdgeTTSEntity(TextToSpeechEntity):
         if key in self._entry.data:
             return str(self._entry.data[key])
         return default
+
+
+def _strip_id3v2(data: bytes) -> bytes:
+    """Remove ID3v2 tag from MP3 bytes if present."""
+    if len(data) < 10 or not data.startswith(b"ID3"):
+        return data
+
+    # ID3v2 header: "ID3" + ver(2) + flags(1) + size(4, synchsafe)
+    size_bytes = data[6:10]
+    size = 0
+    for b in size_bytes:
+        size = (size << 7) | (b & 0x7F)
+
+    total = 10 + size
+    if total >= len(data):
+        return data
+    _LOGGER.debug("Stripping ID3v2 tag of %s bytes", size)
+    return data[total:]
