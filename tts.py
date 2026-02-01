@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import logging
+import os
+import tempfile
 from typing import Any
 
 import edge_tts
@@ -14,11 +16,21 @@ from homeassistant.components.tts import (
     TtsAudioType,
     Voice,
 )
+from homeassistant.components.media_player import (
+    ATTR_MEDIA_ANNOUNCE,
+    ATTR_MEDIA_CONTENT_ID,
+    ATTR_MEDIA_CONTENT_TYPE,
+    DOMAIN as DOMAIN_MP,
+    SERVICE_PLAY_MEDIA,
+    MediaType,
+)
 from homeassistant.components import tts as tts_component
-from homeassistant.const import EntityCategory
+from homeassistant.const import ATTR_ENTITY_ID, EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.device_registry import DeviceInfo
+from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import EdgeTtsConfigEntry, EdgeTtsData
@@ -186,6 +198,50 @@ class EdgeTTSEntity(TextToSpeechEntity):
             _LOGGER.warning("Edge TTS request failed: %s", err, exc_info=True)
             raise HomeAssistantError("Edge TTS request failed") from err
 
+    async def async_speak(
+        self,
+        media_player_entity_id: list[str],
+        message: str,
+        cache: bool,
+        language: str | None = None,
+        options: dict | None = None,
+    ) -> None:
+        """Speak via a Media Player.
+
+        Use a local file path for Apple TV to avoid HTTP fetch issues.
+        """
+        apple_tv_ids, other_ids = self._split_media_players(media_player_entity_id)
+
+        if other_ids:
+            await super().async_speak(other_ids, message, cache, language, options)
+
+        if not apple_tv_ids:
+            return
+
+        manager = self.hass.data[tts_component.DATA_TTS_MANAGER]
+        language, merged_options = manager.process_options(self, language, options)
+        extension, audio_bytes = await self.async_get_tts_audio(
+            message, language, merged_options
+        )
+
+        if not extension or not audio_bytes:
+            raise HomeAssistantError("No audio received from Edge TTS")
+
+        file_path = self._write_temp_audio(audio_bytes, extension)
+        await self.hass.services.async_call(
+            DOMAIN_MP,
+            SERVICE_PLAY_MEDIA,
+            {
+                ATTR_ENTITY_ID: apple_tv_ids,
+                ATTR_MEDIA_CONTENT_ID: file_path,
+                ATTR_MEDIA_CONTENT_TYPE: MediaType.MUSIC,
+                ATTR_MEDIA_ANNOUNCE: True,
+            },
+            blocking=True,
+            context=self._context,
+        )
+        self._schedule_temp_cleanup(file_path)
+
     def _voice_for_language(self, language: str) -> str | None:
         """Pick the first voice matching the requested language."""
         if not self._voices:
@@ -205,6 +261,44 @@ class EdgeTTSEntity(TextToSpeechEntity):
         if key in self._entry.data:
             return str(self._entry.data[key])
         return default
+
+    def _split_media_players(self, entity_ids: list[str]) -> tuple[list[str], list[str]]:
+        """Split media players into Apple TV and others."""
+        if not entity_ids:
+            return [], []
+
+        registry = er.async_get(self.hass)
+        apple_tv_ids: list[str] = []
+        other_ids: list[str] = []
+
+        for entity_id in entity_ids:
+            entry = registry.async_get(entity_id)
+            if entry and entry.platform == "apple_tv":
+                apple_tv_ids.append(entity_id)
+            else:
+                other_ids.append(entity_id)
+
+        return apple_tv_ids, other_ids
+
+    def _write_temp_audio(self, audio_bytes: bytes, extension: str) -> str:
+        """Write audio to a temporary file and return the path."""
+        tmp = tempfile.NamedTemporaryFile(
+            mode="wb", suffix=f".{extension}", delete=False
+        )
+        with tmp:
+            tmp.write(audio_bytes)
+        return tmp.name
+
+    def _schedule_temp_cleanup(self, path: str, delay: int = 600) -> None:
+        """Schedule deletion of a temporary audio file."""
+
+        async def _cleanup(_: Any) -> None:
+            try:
+                os.remove(path)
+            except OSError as err:
+                _LOGGER.debug("Failed to remove temp TTS file %s: %s", path, err)
+
+        async_call_later(self.hass, delay, _cleanup)
 
 
 def _strip_id3v2(data: bytes) -> bytes:
