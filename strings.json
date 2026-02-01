@@ -8,13 +8,15 @@
           "voice": "Default voice",
           "rate": "Rate",
           "volume": "Volume",
-          "pitch": "Pitch"
+          "pitch": "Pitch",
+          "output_format": "Output format"
         },
         "data_description": {
           "voice": "Example: en-US-EmmaMultilingualNeural or zh-CN-XiaoxiaoNeural.",
           "rate": "Percentage change, e.g. +0% or -10%.",
           "volume": "Percentage change, e.g. +0% or -10%.",
-          "pitch": "Frequency change, e.g. +0Hz or -50Hz."
+          "pitch": "Frequency change, e.g. +0Hz or -50Hz.",
+          "output_format": "Use wav for maximum compatibility (larger files)."
         }
       }
     },
@@ -31,13 +33,15 @@
           "voice": "Default voice",
           "rate": "Rate",
           "volume": "Volume",
-          "pitch": "Pitch"
+          "pitch": "Pitch",
+          "output_format": "Output format"
         },
         "data_description": {
           "voice": "Example: en-US-EmmaMultilingualNeural or zh-CN-XiaoxiaoNeural.",
           "rate": "Percentage change, e.g. +0% or -10%.",
           "volume": "Percentage change, e.g. +0% or -10%.",
-          "pitch": "Frequency change, e.g. +0Hz or -50Hz."
+          "pitch": "Frequency change, e.g. +0Hz or -50Hz.",
+          "output_format": "Use wav for maximum compatibility (larger files)."
         }
       }
     },

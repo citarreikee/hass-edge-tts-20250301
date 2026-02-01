@@ -13,10 +13,12 @@ from homeassistant.core import callback
 from .const import (
     CONF_PITCH,
     CONF_RATE,
+    CONF_OUTPUT_FORMAT,
     CONF_VOICE,
     CONF_VOLUME,
     DEFAULT_PITCH,
     DEFAULT_RATE,
+    DEFAULT_OUTPUT_FORMAT,
     DEFAULT_VOICE,
     DEFAULT_VOLUME,
     DOMAIN,
@@ -50,6 +52,9 @@ USER_STEP_SCHEMA = vol.Schema(
         vol.Required(CONF_RATE, default=DEFAULT_RATE): str,
         vol.Required(CONF_VOLUME, default=DEFAULT_VOLUME): str,
         vol.Required(CONF_PITCH, default=DEFAULT_PITCH): str,
+        vol.Required(
+            CONF_OUTPUT_FORMAT, default=DEFAULT_OUTPUT_FORMAT
+        ): vol.In(["mp3", "wav"]),
     }
 )
 
@@ -132,6 +137,12 @@ class EdgeTtsOptionsFlow(OptionsFlow):
                             CONF_PITCH, DEFAULT_PITCH
                         ),
                     ): str,
+                    vol.Required(
+                        CONF_OUTPUT_FORMAT,
+                        default=self.config_entry.options.get(
+                            CONF_OUTPUT_FORMAT, DEFAULT_OUTPUT_FORMAT
+                        ),
+                    ): vol.In(["mp3", "wav"]),
                 }
             ),
             errors=errors,

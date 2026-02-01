@@ -8,11 +8,13 @@ from typing import Any
 import edge_tts
 
 from homeassistant.components.tts import (
+    ATTR_PREFERRED_FORMAT,
     ATTR_VOICE,
     TextToSpeechEntity,
     TtsAudioType,
     Voice,
 )
+from homeassistant.components import tts as tts_component
 from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import HomeAssistantError
@@ -26,10 +28,12 @@ from .const import (
     ATTR_VOLUME,
     CONF_PITCH,
     CONF_RATE,
+    CONF_OUTPUT_FORMAT,
     CONF_VOICE,
     CONF_VOLUME,
     DEFAULT_PITCH,
     DEFAULT_RATE,
+    DEFAULT_OUTPUT_FORMAT,
     DEFAULT_VOICE,
     DEFAULT_VOLUME,
     DOMAIN,
@@ -72,7 +76,14 @@ async def async_setup_entry(
 class EdgeTTSEntity(TextToSpeechEntity):
     """Edge TTS entity."""
 
-    _attr_supported_options = [ATTR_VOICE, ATTR_RATE, ATTR_VOLUME, ATTR_PITCH]
+    _attr_supported_options = [
+        ATTR_VOICE,
+        ATTR_RATE,
+        ATTR_VOLUME,
+        ATTR_PITCH,
+        CONF_OUTPUT_FORMAT,
+        ATTR_PREFERRED_FORMAT,
+    ]
     _attr_entity_category = EntityCategory.CONFIG
 
     def __init__(self, entry: EdgeTtsConfigEntry, voices: list[dict[str, Any]]) -> None:
@@ -84,6 +95,9 @@ class EdgeTTSEntity(TextToSpeechEntity):
         self._default_rate = self._entry_value(CONF_RATE, DEFAULT_RATE)
         self._default_volume = self._entry_value(CONF_VOLUME, DEFAULT_VOLUME)
         self._default_pitch = self._entry_value(CONF_PITCH, DEFAULT_PITCH)
+        self._default_output_format = self._entry_value(
+            CONF_OUTPUT_FORMAT, DEFAULT_OUTPUT_FORMAT
+        )
 
         locales = sorted({v.get("Locale") for v in voices if v.get("Locale")})
         default_locale = _locale_from_voice(self._default_voice)
@@ -97,6 +111,7 @@ class EdgeTTSEntity(TextToSpeechEntity):
             ATTR_RATE: self._default_rate,
             ATTR_VOLUME: self._default_volume,
             ATTR_PITCH: self._default_pitch,
+            CONF_OUTPUT_FORMAT: self._default_output_format,
         }
 
         self._attr_unique_id = entry.entry_id
@@ -140,6 +155,8 @@ class EdgeTTSEntity(TextToSpeechEntity):
         rate = options.get(ATTR_RATE, self._default_rate)
         volume = options.get(ATTR_VOLUME, self._default_volume)
         pitch = options.get(ATTR_PITCH, self._default_pitch)
+        output_format = options.get(CONF_OUTPUT_FORMAT, self._default_output_format)
+        output_format = options.get(ATTR_PREFERRED_FORMAT, output_format)
 
         try:
             communicate = edge_tts.Communicate(
@@ -159,6 +176,11 @@ class EdgeTTSEntity(TextToSpeechEntity):
 
             audio_bytes = b"".join(audio_chunks)
             audio_bytes = _strip_id3v2(audio_bytes)
+            if output_format == "wav":
+                audio_bytes = await tts_component.async_convert_audio(
+                    self.hass, "mp3", audio_bytes, "wav"
+                )
+                return "wav", audio_bytes
             return "mp3", audio_bytes
         except Exception as err:  # noqa: BLE001 - surface the error to the user
             _LOGGER.warning("Edge TTS request failed: %s", err, exc_info=True)
