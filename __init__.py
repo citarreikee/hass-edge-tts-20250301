@@ -25,6 +25,10 @@ type EdgeTtsConfigEntry = ConfigEntry[EdgeTtsData]
 
 async def async_setup_entry(hass: HomeAssistant, entry: EdgeTtsConfigEntry) -> bool:
     """Set up Edge TTS from a config entry."""
+    if "output_format" in entry.options:
+        options = dict(entry.options)
+        options.pop("output_format", None)
+        hass.config_entries.async_update_entry(entry, options=options)
     entry.add_update_listener(update_listener)
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True

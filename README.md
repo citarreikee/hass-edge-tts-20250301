@@ -24,7 +24,6 @@ The UI flow asks for:
 - **Rate**: Example `+0%`, `-10%`
 - **Volume**: Example `+0%`, `-10%`
 - **Pitch**: Example `+0Hz`, `-50Hz`
-- **Output format**: `mp3` (default) or `wav` (best compatibility)
 
 You can adjust these later in **Options**.
 
@@ -39,7 +38,6 @@ data:
     rate: "+0%"
     volume: "+0%"
     pitch: "+0Hz"
-    output_format: "wav"
 ```
 
 ## Troubleshooting
